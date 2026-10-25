@@ -1,63 +1,39 @@
 
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
-const services = [
-  {
-    title: "Facial Treatment",
-    description:
-      "Refresh your skin with a relaxing facial tailored to your skincare needs.",
-    image:
-      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80",
-    alt: "Facial skincare treatment",
-  },
-  {
-    title: "Hair Styling",
-    description:
-      "Discover beautiful hairstyles and hair care for every occasion.",
-    image:
-      "https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=800&q=80",
-    alt: "Professional hair styling",
-  },
-  {
-    title: "Manicure & Nails",
-    description:
-      "Complete your look with elegant manicures and beautiful nail care.",
-    image:
-      "https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=800&q=80",
-    alt: "Manicure and nail care",
-  },
-  {
-    title: "Relaxing Spa",
-    description:
-      "Escape your daily routine and enjoy a peaceful moment of relaxation.",
-    image:
-      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
-    alt: "Relaxing spa experience",
-  },
-  {
-    title: "Massage Therapy",
-    description:
-      "Unwind in a calming atmosphere with a relaxing full-body massage.",
-    image:
-      "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=800&q=80",
-    alt: "Relaxing massage treatment",
-  },
-  {
-    title: "Hammam & Shower",
-    description:
-      "Enjoy a refreshing bathing experience with cleansing and body care.",
-    image:
-      "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=800&q=80",
-    alt: "Relaxing bath and shower",
-  },
-];
+const API_URL = "https://6add4e07fa5e73d4ab2defa5.mockapi.io/api/v1/services";
 
 function Services() {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch(API_URL);
+
+        if (!response.ok) {
+          throw new Error("Impossible de charger les services.");
+        }
+
+        const data = await response.json();
+        setServices(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
   return (
     <main className="bg-[#fffaf8] min-h-screen py-16 sm:py-20">
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-        {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
           <p className="text-[#89505f] uppercase tracking-[3px] text-sm mb-4">
             Our Services
@@ -73,40 +49,55 @@ function Services() {
           </p>
         </div>
 
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service) => (
-            <article
-              key={service.title}
-              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-300"
-            >
-              <img
-                src={service.image}
-                alt={service.alt}
-                loading="lazy"
-                className="w-full h-64 object-cover"
-              />
+        {loading && (
+          <p className="text-center text-gray-600">Loading services...</p>
+        )}
 
-              <div className="p-6">
-                <h2 className="text-2xl font-serif text-[#3d2930] mb-3">
-                  {service.title}
-                </h2>
+        {!loading && error && (
+          <p className="text-center text-red-600">{error}</p>
+        )}
 
-                <p className="text-gray-600 text-sm leading-6 mb-5">
-                  {service.description}
-                </p>
+        {!loading && !error && services.length === 0 && (
+          <p className="text-center text-gray-600">
+            No services available yet.
+          </p>
+        )}
 
-                <Link
-                  to="/booking"
-                  className="inline-flex items-center gap-2 text-[#89505f] font-medium hover:gap-3 transition-all duration-300"
-                >
-                  Book Now
-                  <ArrowRight size={18} strokeWidth={1.8} />
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
+        {!loading && !error && services.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service) => (
+              <article
+                key={service.id ?? service.title}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition duration-300"
+              >
+                <img
+                  src={service.image}
+                  alt={service.alt || service.title}
+                  loading="lazy"
+                  className="w-full h-64 object-cover"
+                />
+
+                <div className="p-6">
+                  <h2 className="text-2xl font-serif text-[#3d2930] mb-3">
+                    {service.title}
+                  </h2>
+
+                  <p className="text-gray-600 text-sm leading-6 mb-5">
+                    {service.description}
+                  </p>
+
+                  <Link
+                    to="/booking"
+                    className="inline-flex items-center gap-2 text-[#89505f] font-medium hover:gap-3 transition-all duration-300"
+                  >
+                    Book Now
+                    <ArrowRight size={18} strokeWidth={1.8} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
