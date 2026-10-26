@@ -10,6 +10,7 @@ import Booking from "./pages/Booking";
 import AdminLogin from "./pages/admin/AdminLogin";
 import ProtectedRoute from "./pages/admin/ProtectedRoute";
 import Appointments from "./pages/admin/Appointments";
+import AdminCalendar from "./pages/admin/AdminCalendar";
 import Footer from "./components/Footer";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -43,6 +44,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>}/>
         <Route path="/admin/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>}/>
+        <Route path="/admin/calendar" element={<AdminCalendar />} />
       </Routes>
     </div>
   );
