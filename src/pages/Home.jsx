@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -7,6 +8,7 @@ import {
   Flower2,
 } from "lucide-react";
 import homeImage from "../assets/images/Home.png";
+import { supabase } from "../utils/supabase";
 
 const SERVICES_API =
   "https://6add4e07fa5e73d4ab2defa5.mockapi.io/api/v1/services";
@@ -20,11 +22,32 @@ function Home() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [galleryLoading, setGalleryLoading] = useState(true);
 
+  // Test Supabase connection
+  useEffect(() => {
+    const testConnection = async () => {
+      const { error } = await supabase
+        .from("bookings")
+        .select("id")
+        .limit(1);
+
+      if (error) {
+        console.error("Supabase error:", error.message);
+      } else {
+        console.log("Supabase connection successful!");
+      }
+    };
+
+    testConnection();
+  }, []);
+
+  // Fetch services and gallery
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const response = await fetch(SERVICES_API);
-        if (!response.ok) throw new Error("Failed to load services");
+        if (!response.ok) {
+          throw new Error("Failed to load services");
+        }
 
         const data = await response.json();
         setServices(Array.isArray(data) ? data : []);
@@ -38,7 +61,9 @@ function Home() {
     const fetchGallery = async () => {
       try {
         const response = await fetch(GALLERY_API);
-        if (!response.ok) throw new Error("Failed to load gallery");
+        if (!response.ok) {
+          throw new Error("Failed to load gallery");
+        }
 
         const data = await response.json();
         setGalleryImages(Array.isArray(data) ? data : []);
@@ -98,9 +123,11 @@ function Home() {
               <p className="text-[#89505f] uppercase tracking-[3px] text-xs sm:text-sm mb-3">
                 What We Offer
               </p>
+
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-[#3d2930]">
                 Our Featured Services
               </h2>
+
               <p className="text-gray-600 mt-4 leading-7 max-w-xl">
                 Discover our favorite treatments, created to help you relax and
                 feel your best.
@@ -143,9 +170,11 @@ function Home() {
                     <h3 className="text-2xl font-serif text-[#3d2930] mb-3">
                       {service.title}
                     </h3>
+
                     <p className="text-gray-600 text-sm leading-6 mb-5">
                       {service.description}
                     </p>
+
                     <Link
                       to="/booking"
                       className="inline-flex items-center gap-2 text-[#89505f] font-medium hover:gap-3 transition-all"
@@ -167,9 +196,11 @@ function Home() {
             <p className="text-[#89505f] uppercase tracking-[3px] text-xs sm:text-sm mb-3">
               The Belleora Experience
             </p>
+
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-[#3d2930]">
               A Little Time Just for You
             </h2>
+
             <p className="text-gray-600 mt-4 leading-7">
               Take a break from your busy day and enjoy a moment dedicated to
               your beauty and well-being.
@@ -181,9 +212,11 @@ function Home() {
               <div className="w-14 h-14 rounded-full bg-[#f3e8e8] text-[#89505f] flex items-center justify-center mx-auto mb-5">
                 <Sparkles size={26} strokeWidth={1.6} />
               </div>
+
               <h3 className="text-xl font-serif text-[#3d2930] mb-3">
                 Personalized Care
               </h3>
+
               <p className="text-gray-600 text-sm leading-6">
                 Beauty treatments selected around your needs and preferences.
               </p>
@@ -193,9 +226,11 @@ function Home() {
               <div className="w-14 h-14 rounded-full bg-[#f3e8e8] text-[#89505f] flex items-center justify-center mx-auto mb-5">
                 <Heart size={26} strokeWidth={1.6} />
               </div>
+
               <h3 className="text-xl font-serif text-[#3d2930] mb-3">
                 Relaxing Moments
               </h3>
+
               <p className="text-gray-600 text-sm leading-6">
                 A welcoming atmosphere where you can pause, relax, and recharge.
               </p>
@@ -205,9 +240,11 @@ function Home() {
               <div className="w-14 h-14 rounded-full bg-[#f3e8e8] text-[#89505f] flex items-center justify-center mx-auto mb-5">
                 <Flower2 size={26} strokeWidth={1.6} />
               </div>
+
               <h3 className="text-xl font-serif text-[#3d2930] mb-3">
                 Beauty in Every Detail
               </h3>
+
               <p className="text-gray-600 text-sm leading-6">
                 Thoughtfully selected treatments for a special self-care
                 experience.
@@ -225,9 +262,11 @@ function Home() {
               <p className="text-[#89505f] uppercase tracking-[3px] text-xs sm:text-sm mb-3">
                 A Glimpse of Belleora
               </p>
+
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-[#3d2930]">
                 Our Beauty Gallery
               </h2>
+
               <p className="text-gray-600 mt-4 leading-7 max-w-xl">
                 Explore the details, atmosphere, and beauty behind every visit.
               </p>
@@ -265,11 +304,14 @@ function Home() {
                     loading="lazy"
                     className="w-full h-72 sm:h-80 object-cover group-hover:scale-110 transition duration-500"
                   />
+
                   <div className="absolute inset-0 bg-linear-to-t from-[#3d2930]/80 via-transparent to-transparent" />
+
                   <div className="absolute bottom-0 left-0 p-6">
                     <p className="text-white/80 text-xs uppercase tracking-[2px] mb-2">
                       {image.category}
                     </p>
+
                     <h3 className="text-white text-xl font-serif">
                       {image.title}
                     </h3>
@@ -281,12 +323,9 @@ function Home() {
         </div>
       </section>
 
-      {/* Final CTA */}
-
       {/* Beauty Philosophy */}
       <section className="px-6 sm:px-10 lg:px-16 pt-16 sm:pt-20 pb-24 sm:pb-28">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          {/* Text Content */}
           <div className="order-2 lg:order-1">
             <p className="text-[#89505f] text-xs sm:text-sm uppercase tracking-[3px] mb-5">
               The Belleora Philosophy
@@ -318,7 +357,6 @@ function Home() {
             </Link>
           </div>
 
-          {/* Image */}
           <div className="order-1 lg:order-2 relative">
             <div className="overflow-hidden rounded-2xl">
               <img
@@ -333,6 +371,7 @@ function Home() {
               <p className="font-serif text-lg text-[#3d2930]">
                 Feel Beautiful
               </p>
+
               <p className="text-xs text-gray-500 mt-1">
                 Take a moment for yourself
               </p>
