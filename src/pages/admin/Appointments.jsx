@@ -71,7 +71,7 @@ export default function Appointments() {
           booking_date,
           start_time,
           status
-        `
+        `,
       )
       .order("booking_date", { ascending: false })
       .order("start_time", { ascending: true });
@@ -105,21 +105,23 @@ export default function Appointments() {
       ];
 
       return searchableValues.some((value) =>
-        String(value || "").toLowerCase().includes(query)
+        String(value || "")
+          .toLowerCase()
+          .includes(query),
       );
     });
   }, [appointments, searchTerm]);
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE)
+    Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE),
   );
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const paginatedAppointments = filteredAppointments.slice(
     (safeCurrentPage - 1) * ITEMS_PER_PAGE,
-    safeCurrentPage * ITEMS_PER_PAGE
+    safeCurrentPage * ITEMS_PER_PAGE,
   );
 
   useEffect(() => {
@@ -130,7 +132,7 @@ export default function Appointments() {
     <div className="min-h-screen bg-[#fffaf8]">
       <AdminSidebar />
 
-       <main className="fixed inset-y-0 left-0 right-0 overflow-y-auto bg-[#fffaf8] p-4 pt-20 sm:p-6 sm:pt-20 md:left-64 md:p-8 lg:p-10">
+      <main className="fixed inset-y-0 left-0 right-0 overflow-y-auto bg-[#fffaf8] p-4 pt-20 sm:p-6 sm:pt-20 md:left-64 md:p-8 lg:p-10">
         <div className="mx-auto w-full max-w-7xl">
           {/* Header */}
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -154,10 +156,7 @@ export default function Appointments() {
               disabled={loading}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#eadde0] bg-white px-4 py-3 text-sm font-medium text-[#89505f] transition hover:bg-[#f8eff1] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              <RefreshCw
-                size={16}
-                className={loading ? "animate-spin" : ""}
-              />
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               Refresh
             </button>
           </div>
@@ -167,9 +166,7 @@ export default function Appointments() {
             <div className="rounded-2xl border border-[#f0e5e7] bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-gray-500">
-                    Total appointments
-                  </p>
+                  <p className="text-sm text-gray-500">Total appointments</p>
 
                   <p className="mt-2 text-3xl font-bold text-[#38232c]">
                     {appointments.length}
@@ -185,16 +182,14 @@ export default function Appointments() {
             <div className="rounded-2xl border border-[#f0e5e7] bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-gray-500">
-                    Pending appointments
-                  </p>
+                  <p className="text-sm text-gray-500">Pending appointments</p>
 
                   <p className="mt-2 text-3xl font-bold text-[#38232c]">
                     {
                       appointments.filter(
                         (appointment) =>
                           (appointment.status || "pending").toLowerCase() ===
-                          "pending"
+                          "pending",
                       ).length
                     }
                   </p>
@@ -241,14 +236,9 @@ export default function Appointments() {
             {/* Loading */}
             {loading && (
               <div className="flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center">
-                <RefreshCw
-                  size={28}
-                  className="animate-spin text-[#89505f]"
-                />
+                <RefreshCw size={28} className="animate-spin text-[#89505f]" />
 
-                <p className="text-sm text-gray-500">
-                  Loading appointments...
-                </p>
+                <p className="text-sm text-gray-500">Loading appointments...</p>
               </div>
             )}
 
@@ -367,7 +357,9 @@ export default function Appointments() {
                             <span
                               className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${
                                 statusStyles[
-                                  (appointment.status || "pending").toLowerCase()
+                                  (
+                                    appointment.status || "pending"
+                                  ).toLowerCase()
                                 ] || "bg-gray-100 text-gray-600"
                               }`}
                             >
@@ -459,52 +451,60 @@ export default function Appointments() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex flex-col gap-4 border-t border-gray-100 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
-                  <p className="text-center text-sm text-gray-500 sm:text-left">
-                    Showing{" "}
-                    {filteredAppointments.length === 0
-                      ? 0
-                      : (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}
-                    {"–"}
-                    {Math.min(
-                      safeCurrentPage * ITEMS_PER_PAGE,
-                      filteredAppointments.length
-                    )}{" "}
-                    of {filteredAppointments.length}
-                  </p>
+                {!loading && !error && filteredAppointments.length > 0 && (
+                  <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-gray-500">
+                      Showing{" "}
+                      <span className="font-medium text-gray-900">
+                        {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}
+                      </span>
+                      {"-"}
+                      <span className="font-medium text-gray-900">
+                        {Math.min(
+                          safeCurrentPage * ITEMS_PER_PAGE,
+                          filteredAppointments.length,
+                        )}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-medium text-gray-900">
+                        {filteredAppointments.length}
+                      </span>{" "}
+                      appointments
+                    </p>
 
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      disabled={safeCurrentPage === 1}
-                      onClick={() =>
-                        setCurrentPage((page) => Math.max(1, page - 1))
-                      }
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-[#f8eff1] disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCurrentPage((page) => Math.max(1, page - 1))
+                        }
+                        disabled={safeCurrentPage === 1}
+                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronLeft size={16} />
+                        Previous
+                      </button>
 
-                    <span className="min-w-20 text-center text-sm font-medium text-[#38232c]">
-                      Page {safeCurrentPage} of {totalPages}
-                    </span>
+                      <span className="px-2 text-sm text-gray-600">
+                        Page {safeCurrentPage} of {Math.max(totalPages, 1)}
+                      </span>
 
-                    <button
-                      type="button"
-                      disabled={safeCurrentPage === totalPages}
-                      onClick={() =>
-                        setCurrentPage((page) =>
-                          Math.min(totalPages, page + 1)
-                        )
-                      }
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-[#f8eff1] disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Next page"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCurrentPage((page) =>
+                            Math.min(totalPages, page + 1),
+                          )
+                        }
+                        disabled={safeCurrentPage >= totalPages}
+                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
           </section>

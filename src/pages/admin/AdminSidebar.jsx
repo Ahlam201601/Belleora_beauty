@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -95,6 +96,7 @@ export default function AdminSidebar({ onLogout }) {
             alt="Belleora Beauty"
             className="h-10 w-10 shrink-0 rounded-xl bg-white object-contain p-1"
           />
+
           <div>
             <h2 className="text-lg font-semibold">Belleora</h2>
             <p className="text-xs text-gray-300">Beauty Admin</p>
@@ -105,10 +107,11 @@ export default function AdminSidebar({ onLogout }) {
           <p className="mb-3 px-4 text-xs uppercase tracking-widest text-gray-400">
             Menu
           </p>
+
           {navigationLinks}
         </div>
 
-        {/* Always visible at the bottom */}
+        {/* Logout at the bottom */}
         <div className="shrink-0 border-t border-white/10 p-5">
           {logoutButton}
         </div>
@@ -122,6 +125,7 @@ export default function AdminSidebar({ onLogout }) {
             alt="Belleora Beauty"
             className="h-9 w-9 rounded-lg bg-white object-contain p-1"
           />
+
           <div>
             <h2 className="text-base font-semibold">Belleora</h2>
             <p className="text-xs text-gray-300">Beauty Admin</p>
@@ -141,7 +145,7 @@ export default function AdminSidebar({ onLogout }) {
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="fixed inset-x-0 top-16z-50 max-h-[calc(100dvh-64px)] overflow-y-auto bg-[#38232c] px-4 pb-5 pt-4 text-white shadow-xl md:hidden">
+        <div className="fixed inset-x-0 top-16 z-50 max-h-[calc(100dvh-64px)] overflow-y-auto bg-[#38232c] px-4 pb-5 pt-4 text-white shadow-xl md:hidden">
           <p className="mb-3 px-4 text-xs uppercase tracking-widest text-gray-400">
             Menu
           </p>
