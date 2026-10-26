@@ -8,6 +8,7 @@ import Contact from "./pages/Contact";
 import Gallery from "./pages/Gallery";
 import Booking from "./pages/Booking";
 import AdminLogin from "./pages/admin/AdminLogin";
+import ProtectedRoute from "./pages/admin/ProtectedRoute";
 import Footer from "./components/Footer";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -39,7 +40,7 @@ function App() {
 
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>}/>
       </Routes>
     </div>
   );
