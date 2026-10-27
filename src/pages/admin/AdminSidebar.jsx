@@ -6,7 +6,6 @@ import {
   CalendarDays,
   CalendarCheck,
   Users,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -20,7 +19,6 @@ const links = [
   { label: "Calendar", path: "/admin/calendar", icon: CalendarDays },
   { label: "Appointments", path: "/admin/appointments", icon: CalendarCheck },
   { label: "Clients", path: "/admin/clients", icon: Users },
-  { label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminSidebar({ onLogout }) {
