@@ -4,6 +4,8 @@ import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { supabase } from "../../utils/supabase";
 import logo from "../../assets/images/logo.png";
 
+const ADMIN_EMAIL = "ahlam@belleorabeauty.com";
+
 function AdminLogin() {
   const navigate = useNavigate();
 
@@ -16,12 +18,20 @@ function AdminLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (normalizedEmail !== ADMIN_EMAIL) {
+      setError("Access denied. Admin only.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error: loginError } =
         await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: normalizedEmail,
           password,
         });
 
@@ -93,7 +103,7 @@ function AdminLogin() {
               </h2>
 
               <p className="mt-3 text-sm leading-6 text-gray-500">
-                Enter your credentials to access your dashboard.
+                Enter your admin credentials to access your dashboard.
               </p>
             </div>
 
@@ -107,10 +117,7 @@ function AdminLogin() {
                 </label>
 
                 <div className="flex items-center rounded-xl border border-gray-200 bg-[#fffdfd] transition focus-within:border-[#89505f] focus-within:ring-2 focus-within:ring-[#89505f]/10">
-                  <Mail
-                    size={18}
-                    className="ml-4 shrink-0 text-gray-400"
-                  />
+                  <Mail size={18} className="ml-4 shrink-0 text-gray-400" />
 
                   <input
                     id="email"

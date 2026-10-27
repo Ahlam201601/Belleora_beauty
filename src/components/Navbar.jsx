@@ -11,6 +11,7 @@ import {
   UserRound,
   LogOut,
   ClipboardList,
+  ShieldUser,
 } from "lucide-react";
 
 import logo from "./../assets/images/logo.png";
@@ -22,11 +23,17 @@ export default function Navbar() {
   const [clientName, setClientName] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     const updateClient = (currentSession) => {
+      if (!mounted) return;
+
+      const user = currentSession?.user ?? null;
+
       setSession(currentSession);
       setClientName(
-        currentSession?.user?.user_metadata?.full_name ||
-          currentSession?.user?.email?.split("@")[0] ||
+        user?.user_metadata?.full_name ||
+          user?.email?.split("@")[0] ||
           ""
       );
     };
@@ -34,9 +41,12 @@ export default function Navbar() {
     const getSession = async () => {
       const { data, error } = await supabase.auth.getSession();
 
-      if (!error) {
-        updateClient(data.session);
+      if (error) {
+        console.error("Error getting session:", error.message);
+        return;
       }
+
+      updateClient(data?.session ?? null);
     };
 
     getSession();
@@ -47,7 +57,10 @@ export default function Navbar() {
       updateClient(newSession);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -80,6 +93,13 @@ export default function Navbar() {
   const actionLinkClass =
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition";
 
+  const adminIconClass = ({ isActive }) =>
+    `inline-flex items-center justify-center rounded-full p-2.5 transition ${
+      isActive
+        ? "bg-[#89505f] text-white"
+        : "bg-[#fff7f7] text-[#89505f] hover:bg-[#f5e5e9]"
+    }`;
+
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
@@ -92,7 +112,7 @@ export default function Navbar() {
           <img
             src={logo}
             alt="Belleora Beauty"
-            className="h-12 w-auto object-contain"
+            className="h-16 w-auto object-contain sm:h-20"
           />
         </Link>
 
@@ -171,6 +191,16 @@ export default function Navbar() {
                 <LogIn size={16} />
                 Sign In
               </Link>
+
+              {/* Admin icon beside Sign In */}
+              <NavLink
+                to="/admin"
+                title="Admin Dashboard"
+                aria-label="Admin Dashboard"
+                className={adminIconClass}
+              >
+                <ShieldUser size={22} />
+              </NavLink>
             </>
           )}
         </div>
@@ -256,14 +286,27 @@ export default function Navbar() {
                     Sign Up
                   </Link>
 
-                  <Link
-                    to="/client/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-full bg-[#89505f] px-4 py-3 text-sm font-medium text-white"
-                  >
-                    <LogIn size={17} />
-                    Sign In
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      to="/client/login"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#89505f] px-4 py-3 text-sm font-medium text-white"
+                    >
+                      <LogIn size={17} />
+                      Sign In
+                    </Link>
+
+                    {/* Admin icon beside Sign In */}
+                    <NavLink
+                      to="/admin"
+                      title="Admin Dashboard"
+                      aria-label="Admin Dashboard"
+                      onClick={() => setMenuOpen(false)}
+                      className={adminIconClass}
+                    >
+                      <ShieldCheck size={22} />
+                    </NavLink>
+                  </div>
                 </div>
               )}
             </div>

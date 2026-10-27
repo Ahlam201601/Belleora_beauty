@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Search,
@@ -9,11 +10,14 @@ import {
   Phone,
   User,
   RefreshCw,
+  Check,
 } from "lucide-react";
 import { supabase } from "../../utils/supabase";
 import AdminSidebar from "../admin/AdminSidebar";
 
 const ITEMS_PER_PAGE = 5;
+
+const ADMIN_EMAIL = "ahlam@belleorabeauty.com";
 
 const statusStyles = {
   pending: "bg-amber-50 text-amber-700",
@@ -24,7 +28,6 @@ const statusStyles = {
 
 const formatStatus = (status) => {
   if (!status) return "Pending";
-
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
@@ -44,7 +47,6 @@ const formatDate = (date) => {
 
 const formatTime = (time) => {
   if (!time) return "—";
-
   return time.slice(0, 5);
 };
 
@@ -53,26 +55,27 @@ export default function Appointments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const fetchAppointments = async () => {
     setLoading(true);
     setError("");
+    setSuccess("");
 
     const { data, error: fetchError } = await supabase
       .from("bookings")
-      .select(
-        `
-          id,
-          customer_name,
-          customer_email,
-          customer_phone,
-          service_id,
-          booking_date,
-          start_time,
-          status
-        `,
-      )
+      .select(`
+        id,
+        customer_name,
+        customer_email,
+        customer_phone,
+        service_id,
+        booking_date,
+        start_time,
+        status
+      `)
       .order("booking_date", { ascending: false })
       .order("start_time", { ascending: true });
 
@@ -91,6 +94,69 @@ export default function Appointments() {
     fetchAppointments();
   }, []);
 
+  const confirmAppointment = async (appointment) => {
+    if (!appointment?.id || updatingId) return;
+
+    if ((appointment.status || "pending").toLowerCase() !== "pending") {
+      return;
+    }
+
+    setUpdatingId(appointment.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("Please sign in to your admin account.");
+      }
+
+      if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        throw new Error("You are not authorized to confirm appointments.");
+      }
+
+      const { data, error: updateError } = await supabase
+        .from("bookings")
+        .update({ status: "confirmed" })
+        .eq("id", appointment.id)
+        .eq("status", "pending")
+        .select("id, status")
+        .maybeSingle();
+
+      if (updateError) {
+        console.error("Error confirming appointment:", updateError);
+        throw new Error(
+          "Unable to confirm this appointment. Check your admin access and database policies.",
+        );
+      }
+
+      if (!data) {
+        throw new Error(
+          "This appointment may already have been updated. Please refresh the list.",
+        );
+      }
+
+      setAppointments((previous) =>
+        previous.map((item) =>
+          item.id === appointment.id
+            ? { ...item, status: "confirmed" }
+            : item,
+        ),
+      );
+
+      setSuccess("Appointment confirmed successfully.");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const filteredAppointments = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
@@ -105,9 +171,7 @@ export default function Appointments() {
       ];
 
       return searchableValues.some((value) =>
-        String(value || "")
-          .toLowerCase()
-          .includes(query),
+        String(value || "").toLowerCase().includes(query),
       );
     });
   }, [appointments, searchTerm]);
@@ -127,6 +191,44 @@ export default function Appointments() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  const renderStatus = (status) => {
+    const normalizedStatus = (status || "pending").toLowerCase();
+
+    return (
+      <span
+        className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${
+          statusStyles[normalizedStatus] || "bg-gray-100 text-gray-600"
+        }`}
+      >
+        {formatStatus(status)}
+      </span>
+    );
+  };
+
+  const renderConfirmButton = (appointment) => {
+    const isPending =
+      (appointment.status || "pending").toLowerCase() === "pending";
+    const isUpdating = updatingId === appointment.id;
+
+    if (!isPending) return null;
+
+    return (
+      <button
+        type="button"
+        onClick={() => confirmAppointment(appointment)}
+        disabled={updatingId !== null}
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#89505f] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#70404d] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isUpdating ? (
+          <RefreshCw size={14} className="animate-spin" />
+        ) : (
+          <Check size={14} />
+        )}
+        {isUpdating ? "Confirming..." : "Confirm"}
+      </button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#fffaf8]">
@@ -153,13 +255,35 @@ export default function Appointments() {
             <button
               type="button"
               onClick={fetchAppointments}
-              disabled={loading}
+              disabled={loading || updatingId !== null}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#eadde0] bg-white px-4 py-3 text-sm font-medium text-[#89505f] transition hover:bg-[#f8eff1] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <RefreshCw
+                size={16}
+                className={loading ? "animate-spin" : ""}
+              />
               Refresh
             </button>
           </div>
+
+          {/* Feedback */}
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            >
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div
+              role="status"
+              className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700"
+            >
+              {success}
+            </div>
+          )}
 
           {/* Statistics */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -167,7 +291,6 @@ export default function Appointments() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm text-gray-500">Total appointments</p>
-
                   <p className="mt-2 text-3xl font-bold text-[#38232c]">
                     {appointments.length}
                   </p>
@@ -183,7 +306,6 @@ export default function Appointments() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm text-gray-500">Pending appointments</p>
-
                   <p className="mt-2 text-3xl font-bold text-[#38232c]">
                     {
                       appointments.filter(
@@ -202,7 +324,7 @@ export default function Appointments() {
             </div>
           </div>
 
-          {/* Appointments container */}
+          {/* Appointments */}
           <section className="overflow-hidden rounded-2xl border border-[#f0e5e7] bg-white shadow-sm">
             {/* Search */}
             <div className="flex flex-col gap-4 border-b border-gray-100 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-5">
@@ -236,24 +358,13 @@ export default function Appointments() {
             {/* Loading */}
             {loading && (
               <div className="flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center">
-                <RefreshCw size={28} className="animate-spin text-[#89505f]" />
-
-                <p className="text-sm text-gray-500">Loading appointments...</p>
-              </div>
-            )}
-
-            {/* Error */}
-            {!loading && error && (
-              <div className="p-6 text-center">
-                <p className="mb-4 text-sm text-red-600">{error}</p>
-
-                <button
-                  type="button"
-                  onClick={fetchAppointments}
-                  className="rounded-xl bg-[#89505f] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#70404d]"
-                >
-                  Try again
-                </button>
+                <RefreshCw
+                  size={28}
+                  className="animate-spin text-[#89505f]"
+                />
+                <p className="text-sm text-gray-500">
+                  Loading appointments...
+                </p>
               </div>
             )}
 
@@ -276,11 +387,11 @@ export default function Appointments() {
               </div>
             )}
 
-            {/* Desktop and tablet table */}
             {!loading && !error && filteredAppointments.length > 0 && (
               <>
+                {/* Desktop table */}
                 <div className="hidden w-full overflow-x-auto md:block">
-                  <table className="w-full min-w-212.5 text-left">
+                  <table className="w-full min-w-225 text-left">
                     <thead className="bg-[#fcf7f7]">
                       <tr className="text-xs uppercase tracking-wider text-gray-500">
                         <th className="px-5 py-4 font-semibold">Customer</th>
@@ -288,6 +399,7 @@ export default function Appointments() {
                         <th className="px-5 py-4 font-semibold">Date</th>
                         <th className="px-5 py-4 font-semibold">Time</th>
                         <th className="px-5 py-4 font-semibold">Status</th>
+                        <th className="px-5 py-4 font-semibold">Action</th>
                       </tr>
                     </thead>
 
@@ -307,7 +419,6 @@ export default function Appointments() {
                                 <p className="font-medium text-[#38232c]">
                                   {appointment.customer_name || "Unknown"}
                                 </p>
-
                                 <p className="mt-1 text-xs text-gray-400">
                                   ID: {appointment.id}
                                 </p>
@@ -354,17 +465,11 @@ export default function Appointments() {
                           </td>
 
                           <td className="px-5 py-4">
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${
-                                statusStyles[
-                                  (
-                                    appointment.status || "pending"
-                                  ).toLowerCase()
-                                ] || "bg-gray-100 text-gray-600"
-                              }`}
-                            >
-                              {formatStatus(appointment.status)}
-                            </span>
+                            {renderStatus(appointment.status)}
+                          </td>
+
+                          <td className="px-5 py-4">
+                            {renderConfirmButton(appointment)}
                           </td>
                         </tr>
                       ))}
@@ -388,21 +493,12 @@ export default function Appointments() {
                           <h3 className="wrap-break-word font-semibold text-[#38232c]">
                             {appointment.customer_name || "Unknown"}
                           </h3>
-
                           <p className="mt-1 break-all text-xs text-gray-400">
                             ID: {appointment.id}
                           </p>
                         </div>
 
-                        <span
-                          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            statusStyles[
-                              (appointment.status || "pending").toLowerCase()
-                            ] || "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {formatStatus(appointment.status)}
-                        </span>
+                        {renderStatus(appointment.status)}
                       </div>
 
                       <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
@@ -445,66 +541,66 @@ export default function Appointments() {
                           />
                           <span>{formatTime(appointment.start_time)}</span>
                         </div>
+
+                        {renderConfirmButton(appointment)}
                       </div>
                     </article>
                   ))}
                 </div>
 
                 {/* Pagination */}
-                {!loading && !error && filteredAppointments.length > 0 && (
-                  <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-gray-500">
-                      Showing{" "}
-                      <span className="font-medium text-gray-900">
-                        {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}
-                      </span>
-                      {"-"}
-                      <span className="font-medium text-gray-900">
-                        {Math.min(
-                          safeCurrentPage * ITEMS_PER_PAGE,
-                          filteredAppointments.length,
-                        )}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-medium text-gray-900">
-                        {filteredAppointments.length}
-                      </span>{" "}
-                      appointments
-                    </p>
+                <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-gray-500">
+                    Showing{" "}
+                    <span className="font-medium text-gray-900">
+                      {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}
+                    </span>
+                    {"-"}
+                    <span className="font-medium text-gray-900">
+                      {Math.min(
+                        safeCurrentPage * ITEMS_PER_PAGE,
+                        filteredAppointments.length,
+                      )}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium text-gray-900">
+                      {filteredAppointments.length}
+                    </span>{" "}
+                    appointments
+                  </p>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setCurrentPage((page) => Math.max(1, page - 1))
-                        }
-                        disabled={safeCurrentPage === 1}
-                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronLeft size={16} />
-                        Previous
-                      </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.max(1, page - 1))
+                      }
+                      disabled={safeCurrentPage === 1}
+                      className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronLeft size={16} />
+                      Previous
+                    </button>
 
-                      <span className="px-2 text-sm text-gray-600">
-                        Page {safeCurrentPage} of {Math.max(totalPages, 1)}
-                      </span>
+                    <span className="px-2 text-sm text-gray-600">
+                      Page {safeCurrentPage} of {totalPages}
+                    </span>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setCurrentPage((page) =>
-                            Math.min(totalPages, page + 1),
-                          )
-                        }
-                        disabled={safeCurrentPage >= totalPages}
-                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Next
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPage((page) =>
+                          Math.min(totalPages, page + 1),
+                        )
+                      }
+                      disabled={safeCurrentPage >= totalPages}
+                      className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                      <ChevronRight size={16} />
+                    </button>
                   </div>
-                )}
+                </div>
               </>
             )}
           </section>
