@@ -13,6 +13,8 @@ import Gallery from "./pages/Gallery";
 import Booking from "./pages/Booking";
 import ClientRegister from "./pages/ClientRegister";
 import ClientLogin from "./pages/ClientLogin";
+import Confirmation from "./pages/Confirmation";
+import MyAppointments from "./pages/MyAppointments";
 
 import AdminLogin from "./pages/admin/AdminLogin";
 import ProtectedRoute from "./pages/admin/ProtectedRoute";
@@ -37,6 +39,7 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/gallery" element={<Gallery />} />
+              <Route path="/confirmation" element={<Confirmation />} />
 
               <Route
                 path="/client/register"
@@ -51,6 +54,7 @@ function App() {
               {/* Booking requires client authentication */}
               <Route element={<ClientProtectedRoute />}>
                 <Route path="/booking" element={<Booking />} />
+                <Route path="/my-appointments" element={<MyAppointments />} />
               </Route>
             </Routes>
 

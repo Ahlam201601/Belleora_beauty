@@ -10,6 +10,7 @@ import {
   LogIn,
   UserRound,
   LogOut,
+  ClipboardList,
 } from "lucide-react";
 
 import logo from "./../assets/images/logo.png";
@@ -21,14 +22,21 @@ export default function Navbar() {
   const [clientName, setClientName] = useState("");
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
+    const updateClient = (currentSession) => {
+      setSession(currentSession);
       setClientName(
-        data.session?.user?.user_metadata?.full_name ||
-        data.session?.user?.email?.split("@")[0] ||
-        ""
+        currentSession?.user?.user_metadata?.full_name ||
+          currentSession?.user?.email?.split("@")[0] ||
+          ""
       );
+    };
+
+    const getSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (!error) {
+        updateClient(data.session);
+      }
     };
 
     getSession();
@@ -36,12 +44,7 @@ export default function Navbar() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setClientName(
-        newSession?.user?.user_metadata?.full_name ||
-        newSession?.user?.email?.split("@")[0] ||
-        ""
-      );
+      updateClient(newSession);
     });
 
     return () => subscription.unsubscribe();
@@ -74,10 +77,12 @@ export default function Navbar() {
         : "text-gray-600 hover:text-[#89505f]"
     }`;
 
+  const actionLinkClass =
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition";
+
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-
         {/* Logo */}
         <Link
           to="/"
@@ -116,9 +121,23 @@ export default function Navbar() {
                 </span>
               </div>
 
+              <NavLink
+                to="/my-appointments"
+                className={({ isActive }) =>
+                  `${actionLinkClass} ${
+                    isActive
+                      ? "bg-[#fff0f2] text-[#89505f]"
+                      : "text-gray-600 hover:bg-[#fff7f7] hover:text-[#89505f]"
+                  }`
+                }
+              >
+                <ClipboardList size={16} />
+                My Appointments
+              </NavLink>
+
               <Link
                 to="/booking"
-                className="inline-flex items-center gap-2 rounded-full bg-[#89505f] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#70404d]"
+                className={`${actionLinkClass} bg-[#89505f] text-white hover:bg-[#70404d]`}
               >
                 <CalendarDays size={16} />
                 Book Appointment
@@ -139,7 +158,7 @@ export default function Navbar() {
             <>
               <Link
                 to="/client/register"
-                className="inline-flex items-center gap-2 rounded-full border border-[#89505f] px-4 py-2.5 text-sm font-medium text-[#89505f] transition hover:bg-[#89505f] hover:text-white"
+                className={`${actionLinkClass} border border-[#89505f] text-[#89505f] hover:bg-[#89505f] hover:text-white`}
               >
                 <UserPlus size={16} />
                 Sign Up
@@ -147,7 +166,7 @@ export default function Navbar() {
 
               <Link
                 to="/client/login"
-                className="inline-flex items-center gap-2 rounded-full bg-[#89505f] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#70404d]"
+                className={`${actionLinkClass} bg-[#89505f] text-white hover:bg-[#70404d]`}
               >
                 <LogIn size={16} />
                 Sign In
@@ -159,7 +178,7 @@ export default function Navbar() {
         {/* Mobile menu button */}
         <button
           type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMenuOpen((previous) => !previous)}
           className="rounded-lg p-2 text-[#89505f] md:hidden"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
@@ -191,6 +210,21 @@ export default function Navbar() {
                     <UserRound size={18} />
                     <span>{clientName}</span>
                   </div>
+
+                  <NavLink
+                    to="/my-appointments"
+                    onClick={() => setMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-sm font-medium ${
+                        isActive
+                          ? "border-[#89505f] bg-[#fff7f7] text-[#89505f]"
+                          : "border-gray-200 text-gray-600"
+                      }`
+                    }
+                  >
+                    <ClipboardList size={17} />
+                    My Appointments
+                  </NavLink>
 
                   <Link
                     to="/booking"
