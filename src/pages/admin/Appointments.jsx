@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   Search,
@@ -11,19 +10,19 @@ import {
   User,
   RefreshCw,
   Check,
+  CheckCircle,
 } from "lucide-react";
 import { supabase } from "../../utils/supabase";
 import AdminSidebar from "../admin/AdminSidebar";
 
 const ITEMS_PER_PAGE = 5;
-
 const ADMIN_EMAIL = "ahlam@belleorabeauty.com";
 
 const statusStyles = {
   pending: "bg-amber-50 text-amber-700",
   confirmed: "bg-green-50 text-green-700",
   cancelled: "bg-red-50 text-red-700",
-  completed: "bg-blue-50 text-blue-700",
+  completed: "bg-emerald-50 text-emerald-700",
 };
 
 const formatStatus = (status) => {
@@ -81,7 +80,7 @@ export default function Appointments() {
 
     if (fetchError) {
       console.error("Error fetching appointments:", fetchError);
-      setError("Unable to load appointments. Please try again.");
+      setError(fetchError.message || "Unable to load appointments.");
       setAppointments([]);
     } else {
       setAppointments(data || []);
@@ -95,7 +94,7 @@ export default function Appointments() {
   }, []);
 
   const confirmAppointment = async (appointment) => {
-    if (!appointment?.id || updatingId) return;
+    if (!appointment?.id || updatingId !== null) return;
 
     if ((appointment.status || "pending").toLowerCase() !== "pending") {
       return;
@@ -129,28 +128,87 @@ export default function Appointments() {
 
       if (updateError) {
         console.error("Error confirming appointment:", updateError);
-        throw new Error(
-          "Unable to confirm this appointment. Check your admin access and database policies.",
-        );
+        throw new Error(updateError.message);
       }
 
       if (!data) {
         throw new Error(
-          "This appointment may already have been updated. Please refresh the list.",
+          "This appointment may already have been updated. Please refresh the list."
         );
       }
 
       setAppointments((previous) =>
         previous.map((item) =>
           item.id === appointment.id
-            ? { ...item, status: "confirmed" }
-            : item,
-        ),
+            ? { ...item, status: data.status }
+            : item
+        )
       );
 
       setSuccess("Appointment confirmed successfully.");
     } catch (err) {
-      console.error(err);
+      console.error("Confirm appointment failed:", err);
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const completeAppointment = async (appointment) => {
+    if (!appointment?.id || updatingId !== null) return;
+
+    if ((appointment.status || "").toLowerCase() !== "confirmed") {
+      return;
+    }
+
+    setUpdatingId(appointment.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("Please sign in to your admin account.");
+      }
+
+      if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        throw new Error("You are not authorized to complete appointments.");
+      }
+
+      const { data, error: updateError } = await supabase
+        .from("bookings")
+        .update({ status: "completed" })
+        .eq("id", appointment.id)
+        .eq("status", "confirmed")
+        .select("id, status")
+        .maybeSingle();
+
+      if (updateError) {
+        console.error("Error completing appointment:", updateError);
+        throw new Error(updateError.message);
+      }
+
+      if (!data) {
+        throw new Error(
+          "This appointment may already have been updated. Please refresh the list."
+        );
+      }
+
+      setAppointments((previous) =>
+        previous.map((item) =>
+          item.id === appointment.id
+            ? { ...item, status: data.status }
+            : item
+        )
+      );
+
+      setSuccess("Appointment marked as completed successfully.");
+    } catch (err) {
+      console.error("Complete appointment failed:", err);
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setUpdatingId(null);
@@ -171,21 +229,21 @@ export default function Appointments() {
       ];
 
       return searchableValues.some((value) =>
-        String(value || "").toLowerCase().includes(query),
+        String(value || "").toLowerCase().includes(query)
       );
     });
   }, [appointments, searchTerm]);
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE),
+    Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE)
   );
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const paginatedAppointments = filteredAppointments.slice(
     (safeCurrentPage - 1) * ITEMS_PER_PAGE,
-    safeCurrentPage * ITEMS_PER_PAGE,
+    safeCurrentPage * ITEMS_PER_PAGE
   );
 
   useEffect(() => {
@@ -206,24 +264,60 @@ export default function Appointments() {
     );
   };
 
+  // Both action buttons have the same width and height.
   const renderConfirmButton = (appointment) => {
-    const isPending =
-      (appointment.status || "pending").toLowerCase() === "pending";
+    const status = (appointment.status || "pending").toLowerCase();
     const isUpdating = updatingId === appointment.id;
 
-    if (!isPending) return null;
+    const buttonClass =
+      "inline-flex w-32 shrink-0 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-60";
+
+    if (status === "completed") {
+      return (
+        <span
+          className={`${buttonClass} border-emerald-200 bg-emerald-50 text-emerald-700`}
+        >
+          <CheckCircle size={15} />
+          Completed
+        </span>
+      );
+    }
+
+    if (status === "cancelled") {
+      return null;
+    }
+
+    if (status === "confirmed") {
+      return (
+        <button
+          type="button"
+          onClick={() => completeAppointment(appointment)}
+          disabled={updatingId !== null}
+          className={`${buttonClass} border-emerald-600 bg-emerald-600 text-white shadow-sm hover:border-emerald-700 hover:bg-emerald-700`}
+        >
+          {isUpdating ? (
+            <RefreshCw size={15} className="animate-spin" />
+          ) : (
+            <CheckCircle size={15} />
+          )}
+          {isUpdating ? "Completing..." : "Completed"}
+        </button>
+      );
+    }
+
+    if (status !== "pending") return null;
 
     return (
       <button
         type="button"
         onClick={() => confirmAppointment(appointment)}
         disabled={updatingId !== null}
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#89505f] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#70404d] disabled:cursor-not-allowed disabled:opacity-60"
+        className={`${buttonClass} border-[#89505f] bg-[#89505f] text-white shadow-sm hover:border-[#70404d] hover:bg-[#70404d]`}
       >
         {isUpdating ? (
-          <RefreshCw size={14} className="animate-spin" />
+          <RefreshCw size={15} className="animate-spin" />
         ) : (
-          <Check size={14} />
+          <Check size={15} />
         )}
         {isUpdating ? "Confirming..." : "Confirm"}
       </button>
@@ -311,7 +405,7 @@ export default function Appointments() {
                       appointments.filter(
                         (appointment) =>
                           (appointment.status || "pending").toLowerCase() ===
-                          "pending",
+                          "pending"
                       ).length
                     }
                   </p>
@@ -559,7 +653,7 @@ export default function Appointments() {
                     <span className="font-medium text-gray-900">
                       {Math.min(
                         safeCurrentPage * ITEMS_PER_PAGE,
-                        filteredAppointments.length,
+                        filteredAppointments.length
                       )}
                     </span>{" "}
                     of{" "}
@@ -590,7 +684,7 @@ export default function Appointments() {
                       type="button"
                       onClick={() =>
                         setCurrentPage((page) =>
-                          Math.min(totalPages, page + 1),
+                          Math.min(totalPages, page + 1)
                         )
                       }
                       disabled={safeCurrentPage >= totalPages}
