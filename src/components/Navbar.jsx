@@ -17,10 +17,13 @@ import {
 import logo from "./../assets/images/logo.png";
 import { supabase } from "../utils/supabase";
 
+const ADMIN_EMAIL = "ahlam@belleorabeauty.com";
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [clientName, setClientName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -29,12 +32,18 @@ export default function Navbar() {
       if (!mounted) return;
 
       const user = currentSession?.user ?? null;
+      const admin =
+        user?.email?.trim().toLowerCase() === ADMIN_EMAIL;
 
       setSession(currentSession);
+      setIsAdmin(admin);
+
       setClientName(
-        user?.user_metadata?.full_name ||
-          user?.email?.split("@")[0] ||
-          ""
+        !user || admin
+          ? ""
+          : user.user_metadata?.full_name ||
+              user.email?.split("@")[0] ||
+              ""
       );
     };
 
@@ -100,6 +109,18 @@ export default function Navbar() {
         : "bg-[#fff7f7] text-[#89505f] hover:bg-[#f5e5e9]"
     }`;
 
+  const renderAdminLink = (onClick) => (
+    <NavLink
+      to="/admin"
+      title="Admin Dashboard"
+      aria-label="Admin Dashboard"
+      onClick={onClick}
+      className={adminIconClass}
+    >
+      <ShieldUser size={22} />
+    </NavLink>
+  );
+
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
@@ -132,7 +153,7 @@ export default function Navbar() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
-          {session ? (
+          {session && !isAdmin ? (
             <>
               <div className="flex items-center gap-2 rounded-full bg-[#fff7f7] px-3 py-2 text-sm text-[#89505f]">
                 <UserRound size={17} />
@@ -174,6 +195,22 @@ export default function Navbar() {
                 <LogOut size={18} />
               </button>
             </>
+          ) : session && isAdmin ? (
+            <>
+              <span className="text-sm font-medium text-[#89505f]">
+                Admin
+              </span>
+              {renderAdminLink()}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                title="Sign Out"
+                aria-label="Sign Out"
+                className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-[#89505f]"
+              >
+                <LogOut size={18} />
+              </button>
+            </>
           ) : (
             <>
               <Link
@@ -192,15 +229,7 @@ export default function Navbar() {
                 Sign In
               </Link>
 
-              {/* Admin icon beside Sign In */}
-              <NavLink
-                to="/admin"
-                title="Admin Dashboard"
-                aria-label="Admin Dashboard"
-                className={adminIconClass}
-              >
-                <ShieldUser size={22} />
-              </NavLink>
+              {renderAdminLink()}
             </>
           )}
         </div>
@@ -234,7 +263,7 @@ export default function Navbar() {
             ))}
 
             <div className="border-t border-gray-100 pt-4">
-              {session ? (
+              {session && !isAdmin ? (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-[#89505f]">
                     <UserRound size={18} />
@@ -275,6 +304,31 @@ export default function Navbar() {
                     Sign Out
                   </button>
                 </div>
+              ) : session && isAdmin ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-[#89505f]">
+                    <ShieldUser size={18} />
+                    <span>Admin</span>
+                  </div>
+
+                  <NavLink
+                    to="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-full bg-[#89505f] px-4 py-3 text-sm font-medium text-white"
+                  >
+                    <ShieldUser size={18} />
+                    Admin Dashboard
+                  </NavLink>
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="flex items-center justify-center gap-2 rounded-full border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600"
+                  >
+                    <LogOut size={17} />
+                    Sign Out
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-col gap-3">
                   <Link
@@ -296,16 +350,7 @@ export default function Navbar() {
                       Sign In
                     </Link>
 
-                    {/* Admin icon beside Sign In */}
-                    <NavLink
-                      to="/admin"
-                      title="Admin Dashboard"
-                      aria-label="Admin Dashboard"
-                      onClick={() => setMenuOpen(false)}
-                      className={adminIconClass}
-                    >
-                      <ShieldCheck size={22} />
-                    </NavLink>
+                    {renderAdminLink(() => setMenuOpen(false))}
                   </div>
                 </div>
               )}
