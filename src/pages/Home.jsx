@@ -7,7 +7,7 @@ import {
   Heart,
   Flower2,
 } from "lucide-react";
-import homeImage from "../assets/images/Home.png";
+import homeImage from "../assets/images/home.png";
 import { supabase } from "../utils/supabase";
 
 const SERVICES_API =
